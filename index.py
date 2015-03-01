@@ -2,6 +2,7 @@ import pygame as pgame
 import random
 import time
 
+pgame.init()
 clock = pgame.time.Clock()
 
 screenH = 500
@@ -9,23 +10,33 @@ screenW = 600
 white = (255,255,255)
 red = (225,0,10)
 blue = (10,0,250)
+green = (230,5,10)
+black = (0,0,0)
 birdSize = 20
 fps = 30
-
-riseBird = 5
-slowBird = 5
+barW = 50
+riseHeight = 10
+slowHeight = 5
 
 gameScreen = pgame.display.set_mode((screenW,screenH))
-pgame.display.set_caption("Save the bird")
+pgame.display.set_caption("Save Me Please")
 
 font = pgame.font.SysFont(None,25)
 largeFont = pgame.font.SysFont(None,45)
 
-def showMsg(msg,color,placing = [screenW/2,screenH/2],size = font):
-    toBeShown = size.render(msg,True,color)
-    msgRect = toBeShown.get_rect()
-    msgRect.center = placing[0],placing[1]
-    gameScreen.blit(toBeShown,msgRect)
+def showMsg(text,col,placing = [ screenW/2,screenH/2 ],size = font):
+    msg = size.render(text,True,col)
+    msgBox = msg.get_rect()
+    msgBox.center = placing[0],placing[1]
+    gameScreen.blit(msg,msgBox)
+
+def checkThis(bar,xCo,yCo):
+    if xCo+birdSize > bar[2] and xCo <= bar[2]+barW:
+        if yCo < bar[0]:
+            return True
+        elif yCo+birdSize+1 >= bar[1]:
+            return True
+    return False
 
 def pause():
     paused = True
@@ -45,51 +56,69 @@ def pause():
                     main()
            
 
+
 def gameLoop():
     
     gameExit = False
-
+    gameOver = False 
     birdPosX = screenW/2
     birdPosY = screenH/2
-    riseBirdY = 0
-    riseBirdX = 0
+    riseBird = 0
     countSec = 0
+    score = -1
     barOnScreen = []
     gameStart = False
     last = screenH/2
     
     while not gameExit:
+        while gameOver == True:
+            showMsg("Game Over, you!! Press 'P' to play again or 'Q' to quit",red,[screenW/2,screenH-50])
+            pgame.display.update()
+            
+            for event in pgame.event.get():
+                if event.type == pgame.QUIT:
+                        gameExit = True
+                        gameOver = False
+                        break
+                if event.type == pgame.KEYDOWN:
+                    if event.key == pgame.K_q:
+                        main()
+                    elif event.key == pgame.K_p:
+                        gameLoop()
+        if gameExit:
+            continue
+        
         for event in pgame.event.get():
             if event.type == pgame.QUIT:
                 gameExit = True
                 break
             elif event.type == pgame.KEYDOWN:
-                if event.key == pgame.K_UP:
-                    riseBirdY = -riseBird
-                    gameStart = True
-                elif event.key == pgame.K_RIGHT:
-                    riseBirdX = riseBird
+                if event.key == pgame.K_SPACE:
+                    riseBird = -riseHeight
                     gameStart = True
                 elif event.key == pgame.K_p:
                     pause()
             elif event.type == pgame.KEYUP:
-                if event.key == pgame.K_UP or event.key == pgame.K_RIGHT or event.key == pgame.K_LEFT:
-                    riseBirdY = slowBird
-                    riseBirdX = 0
-                     
+                if event.key == pgame.K_SPACE:
+                    riseBird = slowHeight
+            elif event.type == pgame.MOUSEBUTTONDOWN:
+                riseBird = -riseHeight
+                gameStart = True
+            elif event.type == pgame.MOUSEBUTTONUP:
+                riseBird = slowHeight
+        
         countSec += 1
-        birdPosX += riseBirdX
-        birdPosY += riseBirdY
-
-        if birdPosX+birdSize >= screenW :
-            birdPosX -= riseBirdX
+        birdPosY += riseBird
         if birdPosY <= 0 :
-            birdPosY -= riseBirdY
-
+            birdPosY -= riseBird
+        if birdPosY + birdSize >= screenH :
+            gameOver = True
+            continue
+        
         if gameStart == True:
             if countSec == fps:
                 randNum = int(random.randrange(50,470)/10)*10
-                while not abs(last - randNum) < 100:
+                while not abs(last - randNum) < 100 or randNum + 90 >= screenH:
                     randNum = int(random.randrange(50,470)/10)*10
                 barPos = []
                 barPos.append(randNum)
@@ -99,34 +128,58 @@ def gameLoop():
                 last = randNum
                 print("New Bar")
                 countSec = 0
+                score += 1
         
         gameScreen.fill(white)
-        gameScreen.fill(red,rect = [birdPosX,birdPosY,birdSize,birdSize])
-        pgame.display.update()
         
-        count = 0
-        if count <= 3:
-            for bar in barOnScreen:
-                gameScreen.fill(blue,rect=[bar[2],0,50,bar[0]])
-                gameScreen.fill(blue,rect=[bar[2],bar[1],50,screenH-bar[1]])
-                bar[2] -= 10
-        else:
-            count = 1
-            while count<3:
-                bar = barOnScreen[-count]
-                gameScreen.fill(blue,rect=[bar[2],0,50,bar[0]])
-                gameScreen.fill(blue,rect=[bar[2],bar[1],50,screenH-bar[1]])
-                bar[2] -= 10
-                count += 1
+        for bar in barOnScreen:
+            if bar[2] < 0 :
+                continue
+            gameScreen.fill(blue,rect=[bar[2],0,barW,bar[0]])
+            gameScreen.fill(blue,rect=[bar[2],bar[1],barW,screenH-bar[1]])
+            bar[2] -= 10
+
+            if checkThis(bar,birdPosX,birdPosY):
+                gameOver = True
+                break
+        
+        gameScreen.fill(red,rect = [birdPosX,birdPosY,birdSize,birdSize])
+
+        if score >= 0:      
+            showMsg("Score : "+str(score),red ,[screenW/2,25])  
+        
         pgame.display.update()
-        count += 1
         #for i in range(0,count):
         #    del barOnScreen[i]
         clock.tick(fps)
     pgame.quit()
     quit()
     
-
-gameLoop()
+def main():
+    gameScreen.fill(white)
+    showMsg("Save Me Please !!",green,[screenW/2,screenH/2-150])
+    showMsg("Press 'P' to begin gameplay or 'E' to Exit.",green,[screenW/2,screenH/2-125])
+    showMsg("During gameplay press 'P' to pause",green,[screenW/2,screenH/2-100])
     
+    #Controls
+    showMsg("Controls",black)
+    showMsg("Press 'space' or click to rise and then release",black,[screenW/2,screenH/2+100])
+    showMsg("by kishanp",red,[screenW/2,screenH-75])
+    pgame.display.update()
 
+    while True:
+        for event in pgame.event.get():
+            if event.type == pgame.QUIT:
+                pgame.quit()
+                quit()
+            if event.type == pgame.KEYDOWN:
+                if event.key == pgame.K_p:
+                    gameLoop()
+                elif event.key == pgame.K_e:
+                    gameScreen.fill(white)
+                    showMsg("Good Bye",red)
+                    pgame.display.update()
+                    pgame.quit()
+                    quit()
+
+if __name__ == "__main__": main()

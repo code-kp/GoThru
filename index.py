@@ -19,7 +19,7 @@ riseHeight = 10
 slowHeight = 5
 
 gameScreen = pgame.display.set_mode((screenW,screenH))
-pgame.display.set_caption("Save Me Please")
+pgame.display.set_caption("Go Thru")
 
 font = pgame.font.SysFont(None,25)
 largeFont = pgame.font.SysFont(None,45)
@@ -111,7 +111,7 @@ def gameLoop():
         birdPosY += riseBird
         if birdPosY <= 0 :
             birdPosY -= riseBird
-        if birdPosY + birdSize >= screenH :
+        if birdPosY + birdSize > screenH :
             gameOver = True
             continue
         
@@ -126,7 +126,7 @@ def gameLoop():
                 barPos.append(screenW)
                 barOnScreen.append(barPos)
                 last = randNum
-                print("New Bar")
+                #print("New Bar")
                 countSec = 0
                 score += 1
         
@@ -142,7 +142,9 @@ def gameLoop():
             if checkThis(bar,birdPosX,birdPosY):
                 gameOver = True
                 break
-        
+
+        if not gameStart:
+            showMsg("Press 'Space' to begin or Click ",black,[screenW/2,screenH/2+50])
         gameScreen.fill(red,rect = [birdPosX,birdPosY,birdSize,birdSize])
 
         if score >= 0:      
@@ -157,7 +159,7 @@ def gameLoop():
     
 def main():
     gameScreen.fill(white)
-    showMsg("Save Me Please !!",green,[screenW/2,screenH/2-150])
+    showMsg("Go Thru !!",green,[screenW/2,screenH/2-150])
     showMsg("Press 'P' to begin gameplay or 'E' to Exit.",green,[screenW/2,screenH/2-125])
     showMsg("During gameplay press 'P' to pause",green,[screenW/2,screenH/2-100])
     
